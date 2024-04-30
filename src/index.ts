@@ -67,6 +67,7 @@ const app = new Elysia()
       };
     }
   })
+
   .onBeforeHandle(({ set, tokenData }) => {
     console.log("beforeHandle", tokenData);
   })
@@ -79,7 +80,7 @@ const app = new Elysia()
 
   .get("/api/test", (req) => req.bearer, {
     async beforeHandle({ set, tokenData, daprClient }) {
-      console.log("beforeHandle", tokenData);
+      // console.log("beforeHandle", tokenData);
       const data = await daprClient.state.getBulk('statestore', ['name']);
       console.log(data);
     }
