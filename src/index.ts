@@ -69,7 +69,7 @@ const app = new Elysia()
   })
 
   .onBeforeHandle(({ set, tokenData }) => {
-    console.log("beforeHandle", tokenData);
+    // console.log("beforeHandle", tokenData);
   })
 
   .derive(() => {
@@ -78,15 +78,13 @@ const app = new Elysia()
     };
   })
 
-  .get("/api/test", (req) => req.bearer, {
-    async beforeHandle({ set, tokenData, daprClient }) {
+  .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'), {
+    async beforeHandle({ set, tokenData }) {
       // console.log("beforeHandle", tokenData);
-      const data = await daprClient.state.getBulk('statestore', ['name']);
-      console.log(data);
     }
   })
 
-  .get("/api/test/:id", (req) => req.params.id)
+  .get("/api/test/:key", async ({ daprClient, params }) => await daprClient.state.get('statestore', params.key))
   .post("/api/test", (req) => req.headers)
   .put("/api/test", (req) => req.body)
   .delete("/api/test", (req) => req.body)
