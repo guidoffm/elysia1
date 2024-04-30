@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { bearer } from '@elysiajs/bearer'
 import jwt, { type DecodeOptions, type Jwt, type JwtPayload } from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
@@ -23,6 +23,7 @@ const app = new Elysia()
 
   .use(bearer())
 
+  //verify and decode token
   .derive(async ({ bearer }) => {
     try {
       // console.log('bearer', bearer);
@@ -35,13 +36,9 @@ const app = new Elysia()
       const iss = (jwtoken.payload as JwtPayload).iss;
       // console.log('iss', iss);
       const configResponse = await fetch(`${iss}/.well-known/openid-configuration`);
-      const data = await configResponse.json();
-      // console.log('data', data);
-      if (!(typeof data === 'object' && data && 'jwks_uri' in data && typeof data.jwks_uri === 'string')) {
-        throw new Error('Invalid response from the issuer');
-      }
-
-      const jwksUri = data.jwks_uri;
+      const oidcConfig = await (configResponse.json() as Promise<{ jwks_uri: string }>);
+      // console.log('oidcConfig', oidcConfig);
+      const jwksUri = oidcConfig.jwks_uri;
       // console.log(jwksUri);
       const client = jwksClient({
         jwksUri: jwksUri,
@@ -68,8 +65,33 @@ const app = new Elysia()
     }
   })
 
-  .onBeforeHandle(({ set, tokenData }) => {
-    // console.log("beforeHandle", tokenData);
+  // check if token exists
+  .onBeforeHandle(({ set, tokenData, body }) => {
+    if (!tokenData) {
+      set.status = 401;
+      body = 'Invalid token';
+    }
+  })
+
+  // check if token dates are valid
+  .onBeforeHandle(({ set, tokenData, body }) => {
+    const nbfDate = new Date(((tokenData as JwtPayload)?.nbf as number) * 1000);
+    const expDate = new Date(((tokenData as JwtPayload)?.exp as number) * 1000);
+    if (nbfDate > new Date()) {
+      set.status = 401;
+      body = 'Token is not yet valid';
+    } else if (expDate < new Date()) {
+      set.status = 401;
+      body = 'Token has expired';
+    }
+  })
+
+  // check token issuer
+  .onBeforeHandle(({ set, tokenData, body }) => {
+    if ((tokenData as JwtPayload)?.iss !== 'https://idsvr4.azurewebsites.net') {
+      set.status = 401;
+      body = 'Invalid token issuer';
+    }
   })
 
   .derive(() => {
@@ -78,13 +100,10 @@ const app = new Elysia()
     };
   })
 
-  .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'), {
-    async beforeHandle({ set, tokenData }) {
-      // console.log("beforeHandle", tokenData);
-    }
-  })
+  .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'))
 
   .get("/api/test/:key", async ({ daprClient, params }) => await daprClient.state.get('statestore', params.key))
+
   .post("/api/test", (req) => req.headers)
   .put("/api/test", (req) => req.body)
   .delete("/api/test", (req) => req.body)
