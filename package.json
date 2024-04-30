@@ -17,5 +17,8 @@
     "@types/jsonwebtoken": "^9.0.6",
     "bun-types": "latest"
   },
-  "module": "src/index.js"
+  "module": "src/index.js",
+  "trustedDependencies": [
+    "protobufjs"
+  ]
 }
