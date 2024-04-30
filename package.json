@@ -10,7 +10,7 @@
     "@elysiajs/bearer": "^1.0.2",
     "elysia": "latest",
     "jsonwebtoken": "^9.0.2",
-    "jwks-rsa": "^3.0.1"
+    "jwks-rsa": "^2.1.5"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
