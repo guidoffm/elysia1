@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { bearer } from '@elysiajs/bearer'
-import { DaprClient } from "@dapr/dapr";
+import { DaprClient, LogLevel, LoggerOptions } from "@dapr/dapr";
 import * as jose from 'jose'
 
 const app = new Elysia()
@@ -16,9 +16,18 @@ const app = new Elysia()
   //   },
   // })
 
-  .get('/healthz', () => 'Hello, Elysia!')
-  .get('/livez', () => 'Hello, Elysia!')
-  .get('/readyz', () => 'Hello, Elysia!')
+  .get('/healthz', () => {
+    console.log('healthz');
+    return ('ok');
+  })
+  .get('/livez', () => {
+    console.log('livez');
+    return ('ok');
+  })
+  .get('/readyz', () => {
+    console.log('readyz');
+    return ('ok');
+  })
 
   .use(bearer())
 
@@ -36,11 +45,11 @@ const app = new Elysia()
       const jwksUri = oidcConfig.jwks_uri;
       const jwksResponse = await fetch(jwksUri);
       const jwks = await (jwksResponse.json() as Promise<{ keys: any[] }>);
-      console.log('jwks', jwks);
+      // console.log('jwks', jwks);
       const rsaPublicKey = await jose.importJWK(jwks.keys[0]);
       const tokenData = await jose.jwtVerify(bearer, rsaPublicKey, {
-        issuer: 'https://idsvr4.azurewebsites.net',
-        algorithms: ['RS256']
+        // issuer: 'https://idsvr4.azurewebsites.net',
+        // algorithms: ['RS256']
       });
       return {
         tokenData: tokenData.payload,
@@ -85,7 +94,14 @@ const app = new Elysia()
 
   .derive(() => {
     return {
-      daprClient: new DaprClient(),
+      daprClient: new DaprClient({
+        daprPort: process.env.DAPR_HTTP_PORT || '3500',
+        daprHost: process.env.DAPR_HTTP_HOST || 'localhost',
+        logger: {
+          logLevel: LogLevel.Debug,
+          logToConsole: true,
+        } as LoggerOptions,
+      }),
     };
   })
 
