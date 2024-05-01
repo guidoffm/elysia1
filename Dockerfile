@@ -1,4 +1,7 @@
 FROM oven/bun:alpine
+LABEL org.opencontainers.image.source=https://github.com/guidoffm/elysia1
+LABEL org.opencontainers.image.description="Elysia1"
+LABEL org.opencontainers.image.licenses=MIT
 
 # Run the application as a non-root user.
 USER bun
@@ -6,8 +9,7 @@ USER bun
 WORKDIR /app
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.npm to speed up subsequent builds.
-# Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
+# Leverage a bind mounts to package.json to avoid having to copy them into
 # into this layer.
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=bun.lockb,target=bun.lockb \
