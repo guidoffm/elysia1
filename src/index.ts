@@ -1,8 +1,7 @@
 import { Elysia } from "elysia";
 import { bearer } from '@elysiajs/bearer'
-import jwt, { type DecodeOptions, type Jwt, type JwtPayload } from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
 import { DaprClient } from "@dapr/dapr";
+import * as jose from 'jose'
 
 const app = new Elysia()
 
@@ -30,31 +29,21 @@ const app = new Elysia()
       if (!bearer) {
         throw new Error('Bearer token is required');
       }
-      const jwtoken = jwt.decode(bearer, { complete: true } as DecodeOptions) as Jwt;
-      const kid = jwtoken.header.kid;
-      // console.log('kid', kid);
-      const iss = (jwtoken.payload as JwtPayload).iss;
-      // console.log('iss', iss);
+      const jwToken = jose.decodeJwt(bearer);
+      const iss = jwToken.iss;
       const configResponse = await fetch(`${iss}/.well-known/openid-configuration`);
       const oidcConfig = await (configResponse.json() as Promise<{ jwks_uri: string }>);
-      // console.log('oidcConfig', oidcConfig);
       const jwksUri = oidcConfig.jwks_uri;
-      // console.log(jwksUri);
-      const client = jwksClient({
-        jwksUri: jwksUri,
-        timeout: 3000,
-        requestHeaders: {
-          'user-agent': 'some-user-agent'
-        }
+      const jwksResponse = await fetch(jwksUri);
+      const jwks = await (jwksResponse.json() as Promise<{ keys: any[] }>);
+      console.log('jwks', jwks);
+      const rsaPublicKey = await jose.importJWK(jwks.keys[0]);
+      const tokenData = await jose.jwtVerify(bearer, rsaPublicKey, {
+        issuer: 'https://idsvr4.azurewebsites.net',
+        algorithms: ['RS256']
       });
-      // console.log('client', client);
-      // console.log('kid', kid);
-      const key = await client.getSigningKey(kid);
-      // console.log('key', key);
-      const signingKey = key.getPublicKey();
-      const tokenData = jwt.verify(bearer, signingKey);
       return {
-        tokenData: tokenData,
+        tokenData: tokenData.payload,
       };
 
     } catch (error) {
@@ -75,8 +64,8 @@ const app = new Elysia()
 
   // check if token dates are valid
   .onBeforeHandle(({ set, tokenData, body }) => {
-    const nbfDate = new Date(((tokenData as JwtPayload)?.nbf as number) * 1000);
-    const expDate = new Date(((tokenData as JwtPayload)?.exp as number) * 1000);
+    const nbfDate = new Date((tokenData?.nbf as number) * 1000);
+    const expDate = new Date((tokenData?.exp as number) * 1000);
     if (nbfDate > new Date()) {
       set.status = 401;
       body = 'Token is not yet valid';
@@ -88,7 +77,7 @@ const app = new Elysia()
 
   // check token issuer
   .onBeforeHandle(({ set, tokenData, body }) => {
-    if ((tokenData as JwtPayload)?.iss !== 'https://idsvr4.azurewebsites.net') {
+    if (tokenData?.iss !== 'https://idsvr4.azurewebsites.net') {
       set.status = 401;
       body = 'Invalid token issuer';
     }
