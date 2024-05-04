@@ -5,17 +5,6 @@ import * as jose from 'jose'
 
 const app = new Elysia()
 
-  // .get("/", (req) => JSON.stringify(req), {
-  //   beforeHandle(context) {
-  //     console.log("beforeHandle", context);
-  //     context.set = {
-  //       headers: {
-  //         "Content-Type": "text/html"
-  //       }
-  //     };
-  //   },
-  // })
-
   .get('/healthz', () => {
     console.log('healthz');
     return ('ok');
@@ -45,7 +34,6 @@ const app = new Elysia()
       const jwksUri = oidcConfig.jwks_uri;
       const jwksResponse = await fetch(jwksUri);
       const jwks = await (jwksResponse.json() as Promise<{ keys: any[] }>);
-      // console.log('jwks', jwks);
       const rsaPublicKey = await jose.importJWK(jwks.keys[0]);
       const tokenData = await jose.jwtVerify(bearer, rsaPublicKey, {
         // issuer: 'https://idsvr4.azurewebsites.net',
@@ -114,6 +102,16 @@ const app = new Elysia()
   .delete("/api/test", (req) => req.body)
   .get("/api/204", ({ set }) => {
     set.status = 204;
+  })
+
+  .get('/api/users', async ({ daprClient }) => {
+    return await daprClient.state.query('userstore2', {
+      filter: {},
+      page: {
+        limit: 100
+      },
+      sort: []
+    });
   })
 
   .listen(8080);
