@@ -13,10 +13,6 @@ export const NOT_FOUND = 'NOT_FOUND';
 export const BEARER_TOKEN_REQUIRED = 'Bearer token is required';
 export const INVALID_JWT = 'Invalid JWT';
 
-// function fooPlugin(): Promise<{ default: Elysia }> {
-//   return Promise.resolve({ default: new Elysia() });
-// }
-
 const app = new Elysia()
 
   .get('/healthz', healthz)
@@ -27,45 +23,17 @@ const app = new Elysia()
 
   .use(bearer())
 
-  // .use(fooPlugin())
-
   //verify and decode token
-  .derive(async ({ bearer }) => {
-    try {
-      const tokenData = await bearerPlugin(bearer);
-      return {
-        tokenData: tokenData.payload,
-      };
-
-    } catch (error) {
-      console.error(error);
-      return {
-        tokenData: undefined
-      };
-    }
-  })
+  .derive(async ({ bearer }) => { return { tokenData: await bearerPlugin(bearer) }; })
 
   // check if token exists
-  .onBeforeHandle(({ set, tokenData }) => {
-    if (!tokenData) {
-      return (set.status = 401);
-    }
-  })
+  .onBeforeHandle(({ set, tokenData }) => { if (!tokenData) { return (set.status = 401); } })
 
   // check if token dates are valid
-  .onBeforeHandle(({ set, tokenData }) => {
-    if (!areTokenTimestampsValid(tokenData as JWTPayload)) {
-      return (set.status = 401);
-    }
-  })
+  .onBeforeHandle(({ set, tokenData }) => { if (!areTokenTimestampsValid(tokenData as JWTPayload)) { return (set.status = 401); } })
 
   // check token issuer
-  .onBeforeHandle(({ set, tokenData }) => {
-    console.log('isTokenIssuerValid');
-    if (!isTokenIssuerValid(tokenData as JWTPayload)) {
-      return (set.status = 401);
-    }
-  })
+  .onBeforeHandle(({ set, tokenData }) => { if (!isTokenIssuerValid(tokenData as JWTPayload)) { return (set.status = 401); } })
 
   .derive(() => { return { daprClient: createDaprClient() }; })
 

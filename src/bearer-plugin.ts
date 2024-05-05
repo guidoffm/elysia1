@@ -19,5 +19,5 @@ export async function bearerPlugin(bearer?: string) {
     // issuer: 'https://idsvr4.azurewebsites.net',
     // algorithms: ['RS256']
   });
-  return tokenData;
+  return tokenData.payload;
 }
