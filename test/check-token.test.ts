@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import {  areTokenTimestampsValid, isTokenIssuerValid } from "../src/check-token";
+import { areTokenTimestampsValid, isTokenIssuerValid } from "../src/check-token";
 
 test("isTokenIssuerValid", () => {
     const res = isTokenIssuerValid({ iss: 'https://idsvr4.azurewebsites.net' });
@@ -12,8 +12,8 @@ test("isTokenIssuerValid2", () => {
 });
 
 
-test("checkTokenExpiration", () => {
-    areTokenTimestampsValid({  });
-    // expect(res).toBeObject();
+test("areTokenTimestampsValid", () => {
+    const res = areTokenTimestampsValid({});
+    expect(res).toBeBoolean();
 });
 

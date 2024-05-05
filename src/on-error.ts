@@ -3,6 +3,6 @@ export function onError(code: string, error: any, set: { headers: Record<string,
   if (code === 'NOT_FOUND') {
     set.status = 404
 
-    return 'Not Found :('
+    return 'Not Found'
   }
 }
