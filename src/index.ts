@@ -1,44 +1,30 @@
 import { Elysia } from "elysia";
 import { bearer } from '@elysiajs/bearer'
 import { DaprClient, LogLevel, LoggerOptions } from "@dapr/dapr";
-import * as jose from 'jose'
+
+import { getUsers } from "./users";
+import { bearerPlugin } from "./bearer-plugin";
+import { createDaprClient } from "./dapr-client";
+import { healthz, livez, readyz } from "./alive-checks";
+
+export const NOT_FOUND = 'NOT_FOUND';
+export const BEARER_TOKEN_REQUIRED = 'Bearer token is required';
+export const INVALID_JWT = 'Invalid JWT'
 
 const app = new Elysia()
 
-  .get('/healthz', () => {
-    console.log('healthz');
-    return ('ok');
-  })
-  .get('/livez', () => {
-    console.log('livez');
-    return ('ok');
-  })
-  .get('/readyz', () => {
-    console.log('readyz');
-    return ('ok');
-  })
+  .get('/healthz', healthz)
+
+  .get('/livez', livez)
+
+  .get('/readyz', readyz)
 
   .use(bearer())
 
   //verify and decode token
   .derive(async ({ bearer }) => {
     try {
-      // console.log('bearer', bearer);
-      if (!bearer) {
-        throw new Error('Bearer token is required');
-      }
-      const jwToken = jose.decodeJwt(bearer);
-      const iss = jwToken.iss;
-      const configResponse = await fetch(`${iss}/.well-known/openid-configuration`);
-      const oidcConfig = await (configResponse.json() as Promise<{ jwks_uri: string }>);
-      const jwksUri = oidcConfig.jwks_uri;
-      const jwksResponse = await fetch(jwksUri);
-      const jwks = await (jwksResponse.json() as Promise<{ keys: any[] }>);
-      const rsaPublicKey = await jose.importJWK(jwks.keys[0]);
-      const tokenData = await jose.jwtVerify(bearer, rsaPublicKey, {
-        // issuer: 'https://idsvr4.azurewebsites.net',
-        // algorithms: ['RS256']
-      });
+      const tokenData = await bearerPlugin(bearer);
       return {
         tokenData: tokenData.payload,
       };
@@ -82,14 +68,7 @@ const app = new Elysia()
 
   .derive(() => {
     return {
-      daprClient: new DaprClient({
-        daprPort: process.env.DAPR_HTTP_PORT || '3500',
-        daprHost: process.env.DAPR_HTTP_HOST || 'localhost',
-        logger: {
-          logLevel: LogLevel.Debug,
-          logToConsole: true,
-        } as LoggerOptions,
-      }),
+      daprClient: createDaprClient()
     };
   })
 
@@ -97,21 +76,20 @@ const app = new Elysia()
 
   .get("/api/test/:key", async ({ daprClient, params }) => await daprClient.state.get('statestore', params.key))
 
-  .post("/api/test", (req) => req.headers)
-  .put("/api/test", (req) => req.body)
-  .delete("/api/test", (req) => req.body)
-  .get("/api/204", ({ set }) => {
-    set.status = 204;
+  // .post("/api/test", (req) => req.headers)
+  // .put("/api/test", (req) => req.body)
+  // .delete("/api/test", (req) => req.body)
+  // .get("/api/204", ({ set }) => {
+  //   set.status = 204;
+  // })
+
+  .onError(({ error, set }) => {
+    console.error(error);
+    set.status = 404;
   })
 
   .get('/api/users', async ({ daprClient }) => {
-    return await daprClient.state.query('userstore2', {
-      filter: {},
-      page: {
-        limit: 100
-      },
-      sort: []
-    });
+    return await getUsers(daprClient);
   })
 
   .listen(8080);

@@ -14,8 +14,12 @@ bun run dev
 
 Open http://localhost:8080/ with your browser to see the result.
 
-## Dapr
+## Run
 
     dapr run --app-id elysia1 -- bun run dev
 
     dapr run --app-id elysia1 --dapr-http-port 3500 -- bun run dev
+
+## Test
+
+    dapr run --app-id elysia1 -- bun test
