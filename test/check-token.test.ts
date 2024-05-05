@@ -1,28 +1,19 @@
 import { expect, test } from "bun:test";
-import { checkTokenExists, checkTokenExpiration, checkTokenIssuer } from "../src/check-token";
+import {  areTokenTimestampsValid, isTokenIssuerValid } from "../src/check-token";
 
-test("checkTokenIssuer", () => {
-    checkTokenIssuer({ iss: 'https://idsvr4.azurewebsites.net' }, { headers: {} }, {});
-    // expect(res).toBeUndefined();
+test("isTokenIssuerValid", () => {
+    const res = isTokenIssuerValid({ iss: 'https://idsvr4.azurewebsites.net' });
+    expect(res).toBeTrue();
 });
 
-test("checkTokenIssuer2", () => {
-    checkTokenIssuer({ iss: 'foo' }, { headers: {} }, {});
-    // expect(res).toEqual('Invalid token issuer');
+test("isTokenIssuerValid2", () => {
+    const res = isTokenIssuerValid({ iss: 'foo' });
+    expect(res).toBeFalse();
 });
 
 
 test("checkTokenExpiration", () => {
-    checkTokenExpiration({  }, { headers: {} }, {});
+    areTokenTimestampsValid({  });
     // expect(res).toBeObject();
 });
 
-test("checkTokenIssuer", () => {
-    checkTokenIssuer({ iss: 'https://idsvr4.azurewebsites.net' }, { headers: {} }, {});
-    // expect(res).toBeObject();
-});
-
-test("checkTokenExists", () => {
-    checkTokenExists(undefined, { headers: {} }, {});
-    // expect(res).toEqual('Invalid token');
-});

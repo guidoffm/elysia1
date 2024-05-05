@@ -6,11 +6,16 @@ import { bearerPlugin } from "./bearer-plugin";
 import { createDaprClient } from "./dapr-client";
 import { healthz, livez, readyz } from "./alive-checks";
 import { onError } from "./on-error";
-import { checkTokenIssuer, checkTokenExpiration, checkTokenExists } from "./check-token";
+import { areTokenTimestampsValid, isTokenIssuerValid } from "./check-token";
+import { JWTPayload } from "jose";
 
 export const NOT_FOUND = 'NOT_FOUND';
 export const BEARER_TOKEN_REQUIRED = 'Bearer token is required';
-export const INVALID_JWT = 'Invalid JWT'
+export const INVALID_JWT = 'Invalid JWT';
+
+// function fooPlugin(): Promise<{ default: Elysia }> {
+//   return Promise.resolve({ default: new Elysia() });
+// }
 
 const app = new Elysia()
 
@@ -21,6 +26,8 @@ const app = new Elysia()
   .get('/readyz', readyz)
 
   .use(bearer())
+
+  // .use(fooPlugin())
 
   //verify and decode token
   .derive(async ({ bearer }) => {
@@ -39,13 +46,26 @@ const app = new Elysia()
   })
 
   // check if token exists
-  .onBeforeHandle(({ set, tokenData, body }) => checkTokenExists(tokenData, set, body))
+  .onBeforeHandle(({ set, tokenData }) => {
+    if (!tokenData) {
+      return (set.status = 401);
+    }
+  })
 
   // check if token dates are valid
-  .onBeforeHandle(({ set, tokenData, body }) => checkTokenExpiration(tokenData, set, body))
+  .onBeforeHandle(({ set, tokenData }) => {
+    if (!areTokenTimestampsValid(tokenData as JWTPayload)) {
+      return (set.status = 401);
+    }
+  })
 
   // check token issuer
-  .onBeforeHandle(({ set, tokenData, body }) => checkTokenIssuer(tokenData, set, body))
+  .onBeforeHandle(({ set, tokenData }) => {
+    console.log('isTokenIssuerValid');
+    if (!isTokenIssuerValid(tokenData as JWTPayload)) {
+      return (set.status = 401);
+    }
+  })
 
   .derive(() => { return { daprClient: createDaprClient() }; })
 
@@ -60,7 +80,7 @@ const app = new Elysia()
   //   set.status = 204;
   // })
 
-  .onError(({ error, set }) => { onError(error, set); })
+  .onError(({ code, error, set }) => { onError(code, error, set); })
 
   .get('/api/users', async ({ daprClient }) => {
     return await getUsers(daprClient);

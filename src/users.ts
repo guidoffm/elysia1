@@ -1,5 +1,5 @@
 import { DaprClient } from "@dapr/dapr";
-import { NOT_FOUND } from ".";
+import { NotFoundError } from "elysia";
 
 export async function getUsers(daprClient: DaprClient) {
     return await daprClient.state.query('userstore2', {
@@ -13,7 +13,7 @@ export async function getUsers(daprClient: DaprClient) {
 export async function getUser(daprClient: DaprClient, key: string) {
     const user = await daprClient.state.get('userstore2', key);
     if (!user) {
-        throw new Error(NOT_FOUND);
+        throw new NotFoundError();
     }
     return user;
 }
