@@ -1,11 +1,12 @@
 import { Elysia } from "elysia";
 import { bearer } from '@elysiajs/bearer'
-import { DaprClient, LogLevel, LoggerOptions } from "@dapr/dapr";
 
 import { getUsers } from "./users";
 import { bearerPlugin } from "./bearer-plugin";
 import { createDaprClient } from "./dapr-client";
 import { healthz, livez, readyz } from "./alive-checks";
+import { onError } from "./on-error";
+import { checkTokenIssuer, checkTokenExpiration, checkTokenExists } from "./check-token";
 
 export const NOT_FOUND = 'NOT_FOUND';
 export const BEARER_TOKEN_REQUIRED = 'Bearer token is required';
@@ -38,39 +39,15 @@ const app = new Elysia()
   })
 
   // check if token exists
-  .onBeforeHandle(({ set, tokenData, body }) => {
-    if (!tokenData) {
-      set.status = 401;
-      body = 'Invalid token';
-    }
-  })
+  .onBeforeHandle(({ set, tokenData, body }) => checkTokenExists(tokenData, set, body))
 
   // check if token dates are valid
-  .onBeforeHandle(({ set, tokenData, body }) => {
-    const nbfDate = new Date((tokenData?.nbf as number) * 1000);
-    const expDate = new Date((tokenData?.exp as number) * 1000);
-    if (nbfDate > new Date()) {
-      set.status = 401;
-      body = 'Token is not yet valid';
-    } else if (expDate < new Date()) {
-      set.status = 401;
-      body = 'Token has expired';
-    }
-  })
+  .onBeforeHandle(({ set, tokenData, body }) => checkTokenExpiration(tokenData, set, body))
 
   // check token issuer
-  .onBeforeHandle(({ set, tokenData, body }) => {
-    if (tokenData?.iss !== 'https://idsvr4.azurewebsites.net') {
-      set.status = 401;
-      body = 'Invalid token issuer';
-    }
-  })
+  .onBeforeHandle(({ set, tokenData, body }) => checkTokenIssuer(tokenData, set, body))
 
-  .derive(() => {
-    return {
-      daprClient: createDaprClient()
-    };
-  })
+  .derive(() => { return { daprClient: createDaprClient() }; })
 
   .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'))
 
@@ -83,10 +60,7 @@ const app = new Elysia()
   //   set.status = 204;
   // })
 
-  .onError(({ error, set }) => {
-    console.error(error);
-    set.status = 404;
-  })
+  .onError(({ error, set }) => { onError(error, set); })
 
   .get('/api/users', async ({ daprClient }) => {
     return await getUsers(daprClient);
@@ -97,3 +71,8 @@ const app = new Elysia()
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
+
+
+
+
+
