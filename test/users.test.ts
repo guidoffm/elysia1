@@ -14,7 +14,7 @@ test("testGetUsers", async () => {
 test("testGetUser", async () => {
     const user = await getUser(createDaprClient(), '10') as KeyValueType;
     expect(user).toBeObject();
-    console.log(JSON.stringify(user, null, 2)); 
+    // console.log(JSON.stringify(user, null, 2)); 
     expect(user.city).toBe('New York');
     expect(user.state).toBe('NY');
 });
