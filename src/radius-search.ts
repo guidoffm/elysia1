@@ -7,7 +7,7 @@ export async function radiusSearch(daprClient: DaprClient, zip: string, radius: 
             EQ: { plz: zip }
         },
         page: {
-            limit: 100
+            limit: 1000
         },
         sort: []
     });
