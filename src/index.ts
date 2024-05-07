@@ -8,6 +8,7 @@ import { healthz, livez, readyz } from "./alive-checks";
 import { onError } from "./on-error";
 import { areTokenTimestampsValid, isTokenIssuerValid } from "./check-token";
 import { JWTPayload } from "jose";
+import { getAllZipCodes, radiusSearch } from "./radius-search";
 
 export const NOT_FOUND = 'NOT_FOUND';
 export const BEARER_TOKEN_REQUIRED = 'Bearer token is required';
@@ -54,6 +55,14 @@ const app = new Elysia()
     return await getUsers(daprClient);
   })
 
+  .get('/api/radius/:zip/:radius', async ({ daprClient, params }) => {
+    return await radiusSearch(daprClient, params.zip, +params.radius);
+  })
+
+  .get('/api/zipcodes', async ({ daprClient }) => {
+    return await getAllZipCodes(daprClient);
+  })
+  
   .listen(8080);
 
 console.log(
