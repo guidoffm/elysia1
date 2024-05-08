@@ -38,9 +38,9 @@ const app = new Elysia()
 
   .derive(() => { return { daprClient: createDaprClient() }; })
 
-  .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'))
+  // .get("/api/test", async ({ daprClient }) => await daprClient.state.get('statestore', 'name'))
 
-  .get("/api/test/:key", async ({ daprClient, params }) => await daprClient.state.get('statestore', params.key))
+  // .get("/api/test/:key", async ({ daprClient, params }) => await daprClient.state.get('statestore', params.key))
 
   // .post("/api/test", (req) => req.headers)
   // .put("/api/test", (req) => req.body)
