@@ -16,9 +16,9 @@ Open http://localhost:8080/ with your browser to see the result.
 
 ## Run
 
-    dapr run --app-id elysia1 -- bun run dev
+    ISSUER='https://dex.edvmueller.de' dapr run --app-id elysia1 -- bun run dev
 
-    dapr run --app-id elysia1 --app-port 8080 --dapr-http-port 3500 -- bun run dev
+    ISSUER='https://dex.edvmueller.de' dapr run --app-id elysia1 --app-port 8080 --dapr-http-port 3500 -- bun run dev
 
 ## Test
 

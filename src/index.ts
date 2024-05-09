@@ -34,7 +34,7 @@ const app = new Elysia()
   .onBeforeHandle(({ set, tokenData }) => { if (!areTokenTimestampsValid(tokenData as JWTPayload)) { return (set.status = 401); } })
 
   // check token issuer
-  .onBeforeHandle(({ set, tokenData }) => { if (!isTokenIssuerValid(tokenData as JWTPayload)) { return (set.status = 401); } })
+  // .onBeforeHandle(({ set, tokenData }) => { if (!isTokenIssuerValid(tokenData as JWTPayload)) { return (set.status = 401); } })
 
   .derive(() => { return { daprClient: createDaprClient() }; })
 

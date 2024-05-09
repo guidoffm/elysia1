@@ -16,7 +16,7 @@ export async function bearerPlugin(bearer?: string) {
   const jwks = await (jwksResponse.json() as Promise<{ keys: any[] }>);
   const rsaPublicKey = await jose.importJWK(jwks.keys[0]);
   const tokenData = await jose.jwtVerify(bearer, rsaPublicKey, {
-    // issuer: 'https://idsvr4.azurewebsites.net',
+    issuer: process.env.ISSUER //'https://idsvr4.azurewebsites.net',
     // algorithms: ['RS256']
   });
   return tokenData.payload;

@@ -1,8 +1,8 @@
 import { JWTPayload } from "jose";
 
-export function isTokenIssuerValid(tokenData: JWTPayload) {
-  return tokenData.iss === 'https://idsvr4.azurewebsites.net';
-}
+// export function isTokenIssuerValid(tokenData: JWTPayload) {
+//   return tokenData.iss === 'https://idsvr4.azurewebsites.net';
+// }
 
 /**
  * 
