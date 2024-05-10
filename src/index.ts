@@ -24,17 +24,26 @@ const app = new Elysia()
 
   .use(bearer())
 
+  .onError(({ code, error, set }) => { onError(code, error, set); })
+
   //verify and decode token
   .derive(async ({ bearer }) => { return { tokenData: await bearerPlugin(bearer) }; })
 
+  // .onBeforeHandle(() => { console.log('step 1'); })
+
   // check if token exists
   .onBeforeHandle(({ set, tokenData }) => { if (!tokenData) { return (set.status = 401); } })
+
+  // .onBeforeHandle(() => { console.log('step 2'); })
 
   // check if token dates are valid
   .onBeforeHandle(({ set, tokenData }) => { if (!areTokenTimestampsValid(tokenData as JWTPayload)) { return (set.status = 401); } })
 
   // check token issuer
+  // This is not needed since it is done in the bearer plugin
   // .onBeforeHandle(({ set, tokenData }) => { if (!isTokenIssuerValid(tokenData as JWTPayload)) { return (set.status = 401); } })
+
+    // .onBeforeHandle(() => { console.log('step 3'); })
 
   .derive(() => { return { daprClient: createDaprClient() }; })
 
@@ -49,7 +58,7 @@ const app = new Elysia()
   //   set.status = 204;
   // })
 
-  .onError(({ code, error, set }) => { onError(code, error, set); })
+
 
   .get('/api/users', async ({ daprClient }) => {
     return await getUsers(daprClient);
@@ -62,7 +71,7 @@ const app = new Elysia()
   .get('/api/zipcodes', async ({ daprClient }) => {
     return await getAllZipCodes(daprClient);
   })
-  
+
   .listen(8080);
 
 console.log(
