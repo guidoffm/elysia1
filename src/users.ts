@@ -9,7 +9,7 @@ export async function getUsers(daprClient: DaprClient) {
             limit: 100
         },
         sort: []
-    })
+    });
 }
 export async function getUser(daprClient: DaprClient, key: string) {
     const user = await daprClient.state.get(USERS_STORE, key);
